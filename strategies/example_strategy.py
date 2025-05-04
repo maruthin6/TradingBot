@@ -1,29 +1,36 @@
 from .base_strategy import BaseStrategy
+import numpy as np
 
 class ExampleStrategy(BaseStrategy):
-    def __init__(self, logger, short_window=3, long_window=5):
+    def __init__(self, logger):
         super().__init__("ExampleStrategy", logger)
-        self.short_window = short_window
-        self.long_window = long_window
         self.last_candle_window = None
 
     async def on_new_data(self, data_batch):
-        if not self.enabled or len(data_batch) < self.long_window:
+        if not self.enabled or len(data_batch) < self.window_size:
             self.log("Data not sufficient!")
             return
         
         current_candle_window = data_batch[-1]['candle_start_time']
-        if self.last_candle_window == None or self.last_candle_window == current_candle_window:
+        if self.last_candle_window == current_candle_window:
             return
         self.last_candle_window = current_candle_window
 
-        closes = [d["close"] for d in data_batch[-self.long_window:]]
-        short_avg = sum(closes[-self.short_window:]) / self.short_window
-        long_avg = sum(closes) / self.long_window
+        historical_data = data_batch[:-1]
 
-        if short_avg > long_avg:
-            self.log("BUY SIGNAL")
-        elif short_avg < long_avg:
-            self.log("SELL SIGNAL")
+        # Get the last 50 closes excluding current row
+        closes = [entry['close'] for entry in historical_data[-50:]]
+
+        ma_30 = np.mean(closes[-30:])
+        ma_50 = np.mean(closes)
+
+        if ma_30 < ma_50:
+            self.log("Buy signal: MA30 < MA50")
+            # Place buy order logic here
+        elif ma_30 > ma_50:
+            self.log("Sell signal: MA30 > MA50")
+            # Place sell order logic here
         else:
-            self.log("NO SIGNAL")
+            self.log("No action")
+
+        

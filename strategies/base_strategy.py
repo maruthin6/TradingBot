@@ -5,10 +5,10 @@ class BaseStrategy:
         self.name = name
         self.enabled = True
         self.logger = logger
+        self.window_size = 5
 
     async def on_new_data(self, data_batch):
-        """Called when new data is available."""
-        raise NotImplementedError
+        pass
 
     def enable(self):
         self.enabled = True
